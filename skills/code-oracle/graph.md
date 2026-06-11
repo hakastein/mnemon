@@ -25,6 +25,8 @@ Run these read-only commands yourself (output is small) or hand them to the orac
 
 If the user has already registered the MCP server (tools like `get_review_context_tool`, `get_impact_radius_tool`, `get_architecture_overview_tool`, `detect_changes_tool` are available), prefer those — they return structured context directly. Keep impact queries bounded with `CRG_MAX_IMPACT_NODES` / `CRG_MAX_IMPACT_DEPTH` if results get large.
 
+The graph isn't only for the working project — it works on **any repo root**, including an external repo you've cloned for research. When a research task means broad reading of someone else's codebase, the move is: ask the user → clone the whole repo → `code-review-graph build` on the clone → scope the oracle's reading list from the graph, exactly as below. That turns "read an unfamiliar repo" into "read these 6 files."
+
 ## The Pattern
 
 1. Graph: "given this change / this area of interest, which symbols and files are in the blast radius?" → a concrete file list (typically a handful instead of a directory).

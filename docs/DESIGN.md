@@ -1,6 +1,6 @@
 # Mnemon — Design Document
 
-*Status: v0.1.0 · 2026-06-11*
+*Status: v0.2.0 · 2026-06-11*
 
 ## Problem
 
@@ -43,16 +43,22 @@ The graph computes the oracle's reading list; the oracle reads exactly those fil
 ```
 mnemon/
 ├── .claude-plugin/
-│   ├── plugin.json          # manifest (name=mnemon → skill namespace)
+│   ├── plugin.json          # Claude manifest (name=mnemon → skill namespace)
 │   └── marketplace.json     # self-marketplace, source: "./"
+├── .codex-plugin/
+│   └── plugin.json          # Codex manifest, "skills": "./skills/" (shared dir)
 ├── skills/
 │   └── code-oracle/
-│       ├── SKILL.md         # decision graph, modes, prompt templates
-│       └── graph.md         # loaded on demand when code-review-graph is present
+│       ├── SKILL.md         # decision graph, modes, prompt templates, platform adaptation
+│       ├── graph.md         # loaded on demand when code-review-graph is present
+│       └── references/
+│           └── codex-tools.md  # Claude→Codex tool-name map (Agent→spawn_agent, …)
 ├── agents/
 │   └── oracle.md            # the oracle persona, spawnable as mnemon:oracle
 └── docs/DESIGN.md           # this file
 ```
+
+The `skills/` dir is the single source of truth; each platform ships only a thin manifest pointing at it and a `references/<platform>-tools.md` tool map. Skills are never forked per runtime.
 
 **`skills/code-oracle`** is the entry point, auto-invoked via its `description` when the main agent is about to burn context on investigation. It carries the decision graph (delegate vs. do-it-yourself), both prompt templates, and the anti-pattern list ("red flags") that catches the agent mid-rationalization.
 
@@ -69,7 +75,9 @@ mnemon/
 5. **`Sonnet`-class default for oracles, never haiku-class.** Small models loop on tool-confirmation behavior instead of reading. `opus` only when the *code* demands heavy reasoning; window pressure is solved by sharding into multiple oracles per sub-area, not by a bigger model.
 6. **Honest degradation.** If the runtime lacks `SendMessage`/addressable agents, the skill says to fall back to one richer recon pass rather than fake a persistent oracle by re-spawning.
 7. **Self-marketplace distribution** (the obra/superpowers pattern): both `plugin.json` and `marketplace.json` live in `.claude-plugin/`, the single plugin entry points at `"./"`. Install is two commands, no extra marketplace repo.
-8. **Explicit semver.** `version` in plugin.json gates updates to deliberate bumps; users on `/plugin marketplace update` don't get every WIP commit.
+8. **Explicit semver.** `version` in plugin.json gates updates to deliberate bumps; users on `/plugin marketplace update` don't get every WIP commit. Both manifests carry the same version and must be bumped together.
+9. **A "read" is any bulky input, not just a local file.** v0.2 generalizes the oracle from code to external research: web pages, public-API references, DB schemas, unfamiliar repos. The failure mode is identical — WebFetching page after page into the main context is the web equivalent of grep-fragment gymnastics — so the same delegation applies. "Read fully" stays *per source* (one file/page/schema whole), never "ingest a whole repo." For broad repo reading the main agent asks the user, clones the whole repo, and builds a code-review-graph over the clone to scope the oracle — the graph half works on any repo root, not just the working project.
+10. **Cross-platform by shared `skills/` + tool maps, not forks** (the obra/superpowers pattern). One skills dir; per-platform thin manifests point at it; a `references/<platform>-tools.md` table adapts Claude tool names at read time. The only capability the oracle truly requires is a re-queryable subagent thread (Claude `SendMessage`, Codex open agent threads). Where a runtime lacks it, the skill degrades to one richer recon pass rather than faking persistence — the same honest-degradation rule as for `SendMessage`-less Claude runtimes.
 
 ## Distribution
 
@@ -92,3 +100,5 @@ The skill resolves as `mnemon:code-oracle`, the agent as `mnemon:oracle`. Pre-pu
 - **Recon presets** — named Mode A templates for common diagnostics (port conflicts, disk usage, failed service).
 - **Multi-oracle registry** — a convention for tracking several live oracles (area → agentId) across a long session, so the main agent re-uses instead of re-spawning after summarization.
 - **MCP tool allowlist preset** — a documented `CRG_TOOLS` setting exposing only the 4–6 graph tools the oracle workflow needs.
+- **More runtime bridges** — Cursor/Gemini/Copilot manifests + tool maps and a SessionStart bootstrap, following the same shared-`skills/` pattern now in place for Claude and Codex. (Codex landed first because it has the re-queryable subagent threads the live oracle needs.)
+- **Research presets** — named Mode-B templates for recurring research shapes (public-API reference, "state of tool X", read-an-unfamiliar-repo via clone+graph).

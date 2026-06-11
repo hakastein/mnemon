@@ -1,6 +1,6 @@
 ---
 name: code-oracle
-description: Use when understanding code or system state would require reading many or large files into your own context — repeated narrow greps on fragments, opening a 1000+ line file for one answer, mapping a module or flow, or multi-step diagnostics. Spawns a persistent oracle subagent that reads the files fully and answers follow-up questions via SendMessage, optionally scoped by a code-review-graph structural graph.
+description: Use when understanding code, system state, or an external topic would require reading lots of bulky material into your own context — repeated narrow greps on fragments, opening a 1000+ line file for one answer, mapping a module or flow, multi-step diagnostics, or researching one topic by fetching many web pages / a public-API reference / an unfamiliar GitHub repo / a DB schema. Spawns a persistent oracle subagent that reads the files or sources fully and answers follow-up questions via SendMessage, optionally scoped by a code-review-graph structural graph.
 ---
 
 # Code Oracle
@@ -9,19 +9,31 @@ description: Use when understanding code or system state would require reading m
 
 The expensive resource is tokens in **your** window. Reading a 2000-line file into your context costs you that whole file for the rest of the task; reading it into a subagent's context costs you only the subagent's answer.
 
-**Core principle: investigation reads — files AND command output — belong in a subagent's context, not yours. Spawn a subagent to do the reading; get back answers, not raw content. When you'll have follow-up questions, keep the subagent ALIVE and ask it more via `SendMessage` — it already holds the files, so each question is cheap for you.**
+**Core principle: investigation reads belong in a subagent's context, not yours. Spawn a subagent to do the reading; get back answers, not raw content. When you'll have follow-up questions, keep the subagent ALIVE and ask it more via `SendMessage` — it already holds the material, so each question is cheap for you.**
 
-Doing narrow grep/awk gymnastics yourself to avoid a full read is the anti-pattern this replaces: it still burns your context and gives you a fragmentary picture. Let a subagent read fully instead. (Locating one known target with a single `grep`/`Read` is fine — the ban is on grep/awk used as a *substitute for understanding*, fragment by fragment, in your own context. Inside the oracle, `Grep`/`Glob` to FIND files and then `Read` them fully is exactly right.)
+A "read" is anything bulky you pull in to *understand* rather than to act on — and it is not only local files:
+
+- **Local code & files** — a module, a flow, a config.
+- **Command output** — logs, `ps`/`docker`/`systemctl` dumps, test output.
+- **External research on one topic** — a public-API reference, a database schema, "what's the current state of X", a spec, release notes, an unfamiliar tool's behavior. WebSearch + WebFetch (or query the source) into the oracle, not into yourself.
+- **A GitHub repo you don't own locally** — decide *up front* how much you'll need, and fetch only that:
+  - *A few known files* → WebFetch those specific `raw.githubusercontent.com` files in full. ("Fully" means each file you fetch whole — not the whole repo because one file in it matters.) No download needed.
+  - *Broad coverage / a heavy repo* → don't WebFetch source page by page, and don't silently download gigabytes. **Ask the user first**, e.g. *"looks like this needs broad reading of `repo/name` — clone it and run code-review-graph on the clone so scoping is easy?"* On yes, clone the **whole** repo to a context-appropriate spot (a scratch dir like `/tmp/<name>` for a throwaway look; `.refs/<name>` or the project's reference dir when it's a durable reference for the work — mind the sandbox, a subagent's reads may be confined to the project tree, so prefer an in-tree path when unsure), build a graph on it, and hand the oracle a graph-scoped reading list. From there it's a normal code oracle over the clone.
+
+Doing narrow grep/awk gymnastics yourself to avoid a full read — or fetching web page after web page into your own context to piece a topic together — is the anti-pattern this replaces: it still burns your context and gives you a fragmentary picture. Let a subagent read fully instead. ("Fully" is per-source — one file, one page, one schema read whole — not vacuuming an entire repo. Locating one known target with a single `grep`/`Read`, or one quick `WebFetch` for a single fact, is fine — the ban is on fragment-by-fragment gathering used as a *substitute for understanding*, in your own context. Inside the oracle, `Grep`/`Glob`/`WebSearch` to FIND and then `Read`/`WebFetch` fully is exactly right.)
 
 ## Two Modes
 
-### Mode A — one-shot recon (discrete diagnostic / cleanup)
-A single bounded question: "what's running / why did this fail / what's safe to delete." Subagent runs commands one at a time and returns a synthesis. It dies after.
+### Mode A — one-shot recon (discrete diagnostic / cleanup / lookup)
+A single bounded question: "what's running / why did this fail / what's safe to delete / what does this API's auth flow look like." Subagent runs the commands or fetches the sources one at a time and returns a synthesis. It dies after.
 
 Report shape: **Ran / Found / Analysis / Recommended next actions.**
 
-### Mode B — live code oracle (understanding, with follow-ups)
-You need to understand code and will keep asking about it. Spawn an oracle subagent that reads the relevant files **FULLY** into its own window, becomes your reference for that area, and returns an initial map + its `agentId`. Then every follow-up ("how does X work? who calls Y? where is Z handled?") goes to that **same** subagent via `SendMessage(to: agentId)`. It answers from loaded context; you never load the files.
+### Mode B — live oracle (understanding, with follow-ups)
+You need to understand something and will keep asking about it — a code area **or one research topic**. Spawn an oracle subagent that reads the relevant material **FULLY** into its own window, becomes your reference for it, and returns an initial map + its `agentId`. Then every follow-up goes to that **same** subagent via `SendMessage(to: agentId)`. It answers from loaded context; you never load the material.
+
+- *Code area*: "how does X work? who calls Y? where is Z handled?" The oracle holds the files.
+- *Research topic*: "does this public API support cursor pagination? what changed in the last release? how does repo R wire up its plugin manifests?" The oracle holds the docs / fetched pages / cloned repo. Same economics — you pay for answers, never for the pages.
 
 ## When to Use Which
 
@@ -91,17 +103,43 @@ jump straight there. Answer the question; never paste whole files.
 
 If code-review-graph is available, append to the prompt: the graph-derived reading list, plus a note that the oracle may run read-only `code-review-graph` queries (see [graph.md](graph.md)) for structural questions instead of grepping.
 
+### Research oracle prompt template (Mode B, external sources)
+```
+You are my persistent reference for <topic — e.g. "the Stripe Billing API"
+/ "the current state of Codex CLI subagents" / "how repo R is structured">.
+Pull the primary sources FULLY into your own context, not mine:
+- WebSearch for the authoritative docs/spec, then WebFetch and read each in full.
+- For a GitHub repo: if only a few files matter, WebFetch those raw files whole;
+  if it's heavy or you need broad coverage, `git clone --depth 1 <url> <path>`
+  and Read the files that matter (don't WebFetch source page by page).
+Prefer primary sources over summaries; note recency/version.
+
+Return now: a short map — each source you read + one line on what it is — and
+confirm you're ready for questions. Do NOT paste pages back.
+
+For every later question: answer precisely, cite the `URL` + section (or repo
+`path:line`), quote only the few lines that prove the point.
+```
+
 ### Recon prompt template (Mode A)
 Same hygiene + "do NOT dispatch further subagents", read-only, and: `Report back exactly — Ran / Found (key facts, no dumps) / Analysis / Recommended next actions (flag any mutation I should run myself).`
+
+## Platform Adaptation
+
+This skill is written in Claude Code tool names. On other runtimes, read them through the per-platform map — the skill body doesn't change:
+
+- **Codex CLI** → [references/codex-tools.md](references/codex-tools.md). Key mappings: `Agent`/`Task` → `spawn_agent` (needs `[features] multi_agent = true` in `~/.codex/config.toml`); the live oracle's `SendMessage` follow-ups → re-prompting the same open agent thread (don't `close_agent` until done). Install via the Codex plugin manifest (`.codex-plugin/plugin.json`, `"skills": "./skills/"`).
+- **Other runtimes** → the oracle pattern needs one capability: a subagent thread that stays addressable across follow-ups. Where a runtime has it, Mode B works; where it doesn't, fall back to one richer Mode A recon pass rather than faking persistence by re-spawning. `code-review-graph` is an external CLI and behaves identically everywhere.
 
 ## Common Mistakes
 
 - Grep/awk gymnastics yourself "just this once" → that's the baseline this skill replaces; delegate the reading.
 - Re-spawning a fresh `Agent` per follow-up → it re-reads everything; `SendMessage` the live oracle instead.
 - Using `Explore` as the oracle → it reads excerpts, not whole files; use the oracle agent and tell it to read fully.
-- Letting the oracle paste whole files back → defeats the point; require targeted answers + `file:line`.
+- Letting the oracle paste whole files/pages back → defeats the point; require targeted answers + `file:line` / `URL`.
 - Delegating an edit → you must read what you edit; oracle locates, you Read+edit the minimal slice.
 - Guessing the reading list by directory name when a graph is one command away → check for code-review-graph first.
+- WebFetching page after page (or cloning + browsing a repo) into your OWN context to research one topic → that's a "read"; send it to a research oracle (Mode B).
 - Letting a subagent run `kill`/`rm`/`deploy` → mutations stay with you, one command per call.
 
 ## Red Flags — STOP

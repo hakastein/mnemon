@@ -1,6 +1,6 @@
 # Mnemon
 
-**Persistent code oracles for Claude Code.** Stop burning your main context window on investigation: spawn a subagent that reads the files *fully* into its own window, keep it alive, and ask it questions — it answers with `file:line` citations while your context stays clean. Optionally scoped by a [code-review-graph](https://github.com/tirth8205/code-review-graph) structural graph that tells the oracle exactly which files matter.
+**Persistent code & research oracles for Claude Code and Codex.** Stop burning your main context window on investigation: spawn a subagent that reads the material *fully* into its own window — local files, web pages, a public-API reference, a whole cloned repo — keep it alive, and ask it questions. It answers with `file:line` / `URL` citations while your context stays clean. Optionally scoped by a [code-review-graph](https://github.com/tirth8205/code-review-graph) structural graph that tells the oracle exactly which files matter.
 
 > μνήμων — "mindful, remembering". The oracle remembers the code so your main agent doesn't have to.
 
@@ -25,12 +25,27 @@ pip install code-review-graph      # plain pip, if you know your environment
 
 That's the whole setup — fully local, no API keys, no extras needed. The skill builds the per-repo graph itself on first use (`code-review-graph build`) and keeps `.code-review-graph/` out of your commits. If the tool is missing when the skill needs it, the skill will offer to install it for you.
 
+## Codex CLI (and other runtimes)
+
+The oracle pattern isn't Claude-Code-specific — it needs one capability: a subagent thread that stays addressable across follow-ups. [Codex CLI](https://developers.openai.com/codex/cli) has it, so mnemon ships a Codex plugin manifest alongside the Claude one and shares a single `skills/` dir between them (the [obra/superpowers](https://github.com/obra/superpowers) cross-platform pattern). Tool names are adapted at read time, not by forking the skill.
+
+- **Install** via Codex's plugin/marketplace mechanism; the manifest (`.codex-plugin/plugin.json`) points at the same `./skills/`.
+- **Enable subagents** — the oracle is dispatched with `spawn_agent`, which needs multi-agent mode. Add to `~/.codex/config.toml`:
+  ```toml
+  [features]
+  multi_agent = true
+  ```
+- **Tool mapping** lives in [`skills/code-oracle/references/codex-tools.md`](skills/code-oracle/references/codex-tools.md): `Agent`/`Task` → `spawn_agent`/`wait_agent`/`close_agent`; the live oracle's `SendMessage` follow-ups → re-prompting the same open agent thread (`/agent` to switch/inspect) — keep it open, don't `close_agent` between questions. That open thread is what makes the live oracle (Mode B) work on Codex.
+- **code-review-graph** is unchanged — a standalone CLI that runs identically under any agent.
+
+Other runtimes follow the same recipe: where they offer re-queryable subagent threads, Mode B works; where they don't, the skill degrades honestly to a single richer recon pass rather than faking persistence.
+
 ## What you get
 
-- **`mnemon:code-oracle` skill** — auto-invoked when the agent is about to read many/large files or grep fragments instead of understanding. Routes between two modes:
-  - *Live oracle*: a persistent subagent loads an area of the codebase, returns a map + its `agentId`; every follow-up goes to the same agent via `SendMessage`. No re-reading, no context burn.
-  - *One-shot recon*: bounded diagnostics ("why did this fail?") with a strict `Ran / Found / Analysis / Recommended` report.
-- **`mnemon:oracle` agent** — the oracle persona: reads whole files (never fragments), answers with precise citations, never pastes files back, never edits, never mutates.
+- **`mnemon:code-oracle` skill** — auto-invoked when the agent is about to read many/large files, grep fragments, or WebFetch page after page instead of understanding. Routes between two modes:
+  - *Live oracle*: a persistent subagent loads an area — a code module **or one research topic** (a public API, "the current state of X", an unfamiliar repo, a DB schema) — returns a map + its `agentId`; every follow-up goes to the same agent via `SendMessage`. No re-reading, no context burn.
+  - *One-shot recon*: bounded diagnostics or lookups ("why did this fail?", "what's this API's auth flow?") with a strict `Ran / Found / Analysis / Recommended` report.
+- **`mnemon:oracle` agent** — the oracle persona: reads whole files/pages (never fragments), answers with precise `file:line` / `URL` citations, never pastes content back, never edits, never mutates. For broad reading of an unfamiliar repo it proposes cloning it + building a graph, rather than fetching it page by page.
 - **Graph-assisted scoping** — with [code-review-graph](https://github.com/tirth8205/code-review-graph) installed (see above), the skill uses its blast-radius analysis to compute the oracle's reading list and answers structural questions ("who calls X?") from the graph instead of spawning anything.
 
 ## The rules the skill enforces
