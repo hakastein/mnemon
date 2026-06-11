@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Open-source scaffolding.** Added community-health and CI infrastructure:
+  `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), GitHub
+  issue forms + pull-request template, and `dependabot` for GitHub Actions.
+- **CI pipeline** (`.github/workflows/ci.yml`): validates all JSON manifests,
+  enforces version consistency across manifests, lints Markdown, and runs an
+  informational link check. `main` is protected (PR + passing checks required).
+- **Release tooling.** `scripts/bump-version.sh` sets the version across every
+  manifest at once and verifies they agree (`--check`, run in CI).
+- Repo hygiene: committed `.gitignore`, `.editorconfig`, `.gitattributes`,
+  `.markdownlint.json`, and README status/version/license badges.
+
 ## 0.2.0 — 2026-06-11
 
 - **Research oracle.** The oracle now covers external research, not just local code: web pages, public-API references, DB schemas, and unfamiliar GitHub repos. Single-topic web research goes to a live oracle (or one-shot recon) instead of burning the main context on page-after-page WebFetch. The `oracle` agent gains `WebFetch`/`WebSearch`.

@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in the skill or oracle agent behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Mnemon's behavior depends heavily on the harness and model running it,
+        so the environment details below are essential to reproduce anything.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did the agent do, and what did you expect instead?
+      placeholder: The oracle re-read all files on each follow-up instead of reusing the live agent…
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The prompt(s) / actions that led to the behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Fill in as much as you can.
+      value: |
+        - Harness + version (Claude Code / Codex CLI / other):
+        - Model:
+        - Mnemon version:
+        - code-review-graph installed? version:
+        - OS:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant transcript / logs
+      description: Paste the relevant part of the agent transcript, if any.
+      render: text
+    validations:
+      required: false

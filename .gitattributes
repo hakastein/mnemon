@@ -1,0 +1,11 @@
+# Normalize line endings to LF across platforms
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+
+# Treat common binaries correctly if ever added
+*.png binary
+*.jpg binary
+*.gif binary

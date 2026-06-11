@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/hakastein/mnemon/discussions
+    about: Ask usage questions or share ideas here instead of opening an issue.
+  - name: code-review-graph (separate project)
+    url: https://github.com/tirth8205/code-review-graph
+    about: Issues with the graph engine itself belong in its own repo.

@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JSON manifests are valid
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          status=0
+          for f in **/*.json; do
+            if jq empty "$f"; then
+              echo "ok: $f"
+            else
+              echo "INVALID JSON: $f"
+              status=1
+            fi
+          done
+          exit $status
+
+      - name: Versions agree across manifests
+        run: ./scripts/bump-version.sh --check
+
+  markdown:
+    name: markdown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+
+  links:
+    name: links (informational)
+    runs-on: ubuntu-latest
+    # External link checks are inherently flaky (rate limits, transient 5xx),
+    # so this reports but never blocks a merge.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Markdown links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: "--no-progress --max-retries 3 --accept 200,206,429 './**/*.md'"
+          fail: true
