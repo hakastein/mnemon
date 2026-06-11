@@ -17,7 +17,7 @@
 
 - **Research oracle.** The oracle now covers external research, not just local code: web pages, public-API references, DB schemas, and unfamiliar GitHub repos. Single-topic web research goes to a live oracle (or one-shot recon) instead of burning the main context on page-after-page WebFetch. The `oracle` agent gains `WebFetch`/`WebSearch`.
   - Repo reading is scoped: fetch a few raw files when that's enough; for broad coverage, ask the user before cloning, then clone the whole repo and build a code-review-graph over it to scope the reading list. "Read fully" is per-source (one file/page/schema whole), never "ingest the entire repo."
-- **Codex CLI support.** Ships a Codex plugin manifest (`.codex-plugin/plugin.json`) sharing the single `skills/` dir with the Claude build (the obra/superpowers cross-platform pattern), plus a tool map (`skills/code-oracle/references/codex-tools.md`) adapting `Agent`/`SendMessage`/`subagent_type` to `spawn_agent`/open-thread steering/`~/.codex/agents/*.toml`. New "Platform Adaptation" section in the skill; README documents the Codex install and the `multi_agent` config.
+- **Codex CLI support.** Ships a Codex plugin manifest (`.codex-plugin/plugin.json`) sharing the single `skills/` dir with the Claude build, plus a tool map (`skills/code-oracle/references/codex-tools.md`) adapting `Agent`/`SendMessage`/`subagent_type` to `spawn_agent`/open-thread steering/`~/.codex/agents/*.toml`. New "Platform Adaptation" section in the skill; README documents the Codex install and the `multi_agent` config.
 
 ## 0.1.1 — 2026-06-11
 

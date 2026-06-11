@@ -32,7 +32,7 @@ That's the whole setup — fully local, no API keys, no extras needed. The skill
 
 ## Codex CLI (and other runtimes)
 
-The oracle pattern isn't Claude-Code-specific — it needs one capability: a subagent thread that stays addressable across follow-ups. [Codex CLI](https://developers.openai.com/codex/cli) has it, so mnemon ships a Codex plugin manifest alongside the Claude one and shares a single `skills/` dir between them (the [obra/superpowers](https://github.com/obra/superpowers) cross-platform pattern). Tool names are adapted at read time, not by forking the skill.
+The oracle pattern isn't Claude-Code-specific — it needs one capability: a subagent thread that stays addressable across follow-ups. [Codex CLI](https://developers.openai.com/codex/cli) has it, so mnemon ships a Codex plugin manifest alongside the Claude one and shares a single `skills/` dir between them. Tool names are adapted at read time, not by forking the skill.
 
 - **Install** via Codex's plugin/marketplace mechanism; the manifest (`.codex-plugin/plugin.json`) points at the same `./skills/`.
 - **Enable subagents** — the oracle is dispatched with `spawn_agent`, which needs multi-agent mode. Add to `~/.codex/config.toml`:
@@ -76,7 +76,6 @@ ask for it.
 ## Credits
 
 - [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) (MIT) — the structural-graph engine this plugin integrates with (referenced, not bundled).
-- [obra/superpowers](https://github.com/obra/superpowers) — the plugin/marketplace structure this repo follows.
 
 ## License
 
