@@ -13,7 +13,7 @@ jobs:
     name: validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: JSON manifests are valid
         run: |
@@ -37,7 +37,7 @@ jobs:
     name: markdown
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v19
         with:
@@ -50,7 +50,7 @@ jobs:
     # so this reports but never blocks a merge.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check Markdown links
         uses: lycheeverse/lychee-action@v2
         with:
