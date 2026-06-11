@@ -1,0 +1,12 @@
+{
+  "name": "mnemon",
+  "description": "Persistent code-oracle subagents for context-cheap codebase investigation",
+  "owner": { "name": "hakastein" },
+  "plugins": [
+    {
+      "name": "mnemon",
+      "source": "./",
+      "description": "Persistent code-oracle subagents that hold whole files in their own context and answer your follow-up questions, optionally scoped by a code-review-graph structural graph"
+    }
+  ]
+}

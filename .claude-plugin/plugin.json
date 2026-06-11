@@ -1,0 +1,11 @@
+{
+  "name": "mnemon",
+  "displayName": "Mnemon",
+  "version": "0.1.0",
+  "description": "Persistent code-oracle subagents that hold whole files in their own context and answer your follow-up questions, optionally scoped by a code-review-graph structural graph",
+  "author": { "name": "hakastein", "url": "https://github.com/hakastein" },
+  "homepage": "https://github.com/hakastein/mnemon",
+  "repository": "https://github.com/hakastein/mnemon",
+  "license": "MIT",
+  "keywords": ["subagents", "context", "code-oracle", "code-review-graph", "investigation"]
+}
