@@ -62,7 +62,7 @@ mnemon/
 
 ## Key Decisions
 
-1. **code-review-graph is an optional accelerator, not a dependency.** The skill checks `command -v code-review-graph` once per session. Present → graph-assisted scoping; absent → manual Glob/Grep scoping plus a one-line install suggestion (`pipx install code-review-graph`). The oracle pattern must work on a bare Claude Code install.
+1. **code-review-graph is strongly recommended, but not a hard dependency.** It carries most of the scoping value, so the README documents its installation front-and-center and the skill, on finding it absent (`command -v` check once per session), *offers to install it on the spot* (`pipx install code-review-graph`) rather than silently degrading. Manual Glob/Grep scoping remains as the fallback only when the user declines or installation is impossible — the oracle pattern must still function on a bare Claude Code install. The plugin never installs software without asking.
 2. **Never run `code-review-graph install`.** That command rewrites the user's MCP configuration — a plugin has no business mutating it. If the user registers the MCP server themselves, the skill prefers those tools; otherwise the CLI's LLM-friendly text output is sufficient.
 3. **pipx over pip** in the install suggestion: crg pins `mcp`/`fastmcp` ranges that can conflict in shared Python environments.
 4. **No embeddings extras.** The structural graph alone covers the scoping use case; `[embeddings]`/`[wiki]` pull heavy deps or API keys for marginal gain here.

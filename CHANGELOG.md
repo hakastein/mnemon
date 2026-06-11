@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-06-11
+
+- code-review-graph promoted from "optional accelerator" to strongly recommended companion: dedicated install section in the README (pipx/uv/pip), and the skill now offers to install it when missing instead of silently falling back to manual scoping.
+
 ## 0.1.0 — 2026-06-11
 
 Initial release.

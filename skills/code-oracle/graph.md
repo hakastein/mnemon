@@ -6,7 +6,7 @@ Division of labor: **the graph answers "which files matter and how they connect"
 
 ## Setup (once per repo)
 
-1. `command -v code-review-graph` — if missing, suggest the user install it: `pipx install code-review-graph` (pipx isolates its dependency pins; core install is light — no embeddings extras needed).
+1. `command -v code-review-graph` — if missing, offer to install it right away: `pipx install code-review-graph` (pipx isolates its dependency pins; core install is light — no embeddings extras needed). It is the strongly recommended companion to this skill; see the plugin README's install section for alternatives (`uv tool install`, plain `pip`).
 2. `code-review-graph status` — check whether a graph exists and is fresh.
 3. `code-review-graph build` — first build (fast: ~130ms per 1.1k files). After that, `code-review-graph update` refreshes incrementally.
 4. Make sure `.code-review-graph/` is in the project's `.gitignore` (add it if you create the graph).

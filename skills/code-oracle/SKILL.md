@@ -60,7 +60,7 @@ Before spawning the oracle, decide WHICH files it should load. Guessing by direc
 Check once per session: `command -v code-review-graph`.
 
 - **Available** → read [graph.md](graph.md) and use it to compute the oracle's reading list (impact radius, review context, architecture overview) and to answer purely structural questions ("who calls X?") without spawning anything.
-- **Not available** → scope by hand: `Glob`/`Grep` to identify the candidate file set, then give the oracle directories or explicit paths. Optionally tell the user they can `pipx install code-review-graph` for graph-assisted scoping.
+- **Not available** → offer to install it now: `pipx install code-review-graph` (fully local, no API keys; this is the recommended setup and most of the scoping value). If the user agrees, install, then proceed with [graph.md](graph.md). Only if the user declines or installation is impossible (no Python 3.10+, offline), scope by hand: `Glob`/`Grep` to identify the candidate file set, then give the oracle directories or explicit paths.
 
 ## Spawning the Oracle (Mode B)
 
