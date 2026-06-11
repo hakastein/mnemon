@@ -1,0 +1,13 @@
+# Claude Code local/session state
+.claude/
+
+# code-review-graph per-repo cache (built on demand by the skill)
+.code-review-graph/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

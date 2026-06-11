@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Keep the GitHub Actions used in CI up to date. (No package ecosystem to
+  # track — Mnemon ships no compiled code or dependencies.)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
