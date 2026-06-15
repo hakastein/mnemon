@@ -1,11 +1,20 @@
 {
   "name": "mnemon",
   "displayName": "Mnemon",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Persistent code & research oracle subagents that hold whole files, web pages, and repos in their own context and answer your follow-up questions, optionally scoped by a code-review-graph structural graph",
-  "author": { "name": "hakastein", "url": "https://github.com/hakastein" },
+  "author": {
+    "name": "hakastein",
+    "url": "https://github.com/hakastein"
+  },
   "homepage": "https://github.com/hakastein/mnemon",
   "repository": "https://github.com/hakastein/mnemon",
   "license": "MIT",
-  "keywords": ["subagents", "context", "code-oracle", "code-review-graph", "investigation"]
+  "keywords": [
+    "subagents",
+    "context",
+    "code-oracle",
+    "code-review-graph",
+    "investigation"
+  ]
 }
