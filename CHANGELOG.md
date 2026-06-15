@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-06-15
 
+- **Code-oracle skill: one-level-of-delegation rule.** Added a Common Mistakes
+  entry making explicit that a spawned oracle/recon subagent is a leaf — it
+  reads and answers, never re-invokes the skill or fans out further. Notes that
+  the `mnemon:oracle` agent enforces this (no spawn tool) while the
+  `general-purpose` fallback does not, so its prompt must forbid nesting.
 - **Open-source scaffolding.** Added community-health and CI infrastructure:
   `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), GitHub
   issue forms + pull-request template, and `dependabot` for GitHub Actions.

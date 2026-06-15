@@ -141,6 +141,7 @@ This skill is written in Claude Code tool names. On other runtimes, read them th
 - Guessing the reading list by directory name when a graph is one command away → check for code-review-graph first.
 - WebFetching page after page (or cloning + browsing a repo) into your OWN context to research one topic → that's a "read"; send it to a research oracle (Mode B).
 - Letting a subagent run `kill`/`rm`/`deploy` → mutations stay with you, one command per call.
+- A spawned oracle/recon spawning its OWN subagent → **one level of delegation only**. A spawned subagent is a leaf: it reads and answers, it never re-invokes this skill or fans out further. The `mnemon:oracle` agent enforces this (no spawn tool); the `general-purpose` fallback does NOT — it *can* spawn, so used as the oracle it will nest recon under recon unless its prompt forbids it.
 
 ## Red Flags — STOP
 
