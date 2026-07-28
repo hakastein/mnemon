@@ -71,7 +71,7 @@ Before spawning the oracle, decide WHICH files it should load. Guessing by direc
 
 Check once per session: `command -v code-review-graph`.
 
-- **Available** → read [graph.md](graph.md) and use it to compute the oracle's reading list (impact radius, review context, architecture overview) and to answer purely structural questions ("who calls X?") without spawning anything.
+- **Available** → read [graph.md](graph.md). The CLI builds/refreshes the graph and computes **diff-scoped** reading lists (`detect-changes`). Symbol-level structural questions ("who calls X?", impact radius around a symbol, architecture overview) are **MCP-only** — graph.md covers recommending the MCP server to the user (and waiting for their confirmation before registering it); with it registered you answer those without spawning anything, without it they fall back to grep / the oracle.
 - **Not available** → offer to install it now: `pipx install code-review-graph` (fully local, no API keys; this is the recommended setup and most of the scoping value). If the user agrees, install, then proceed with [graph.md](graph.md). Only if the user declines or installation is impossible (no Python 3.10+, offline), scope by hand: `Glob`/`Grep` to identify the candidate file set, then give the oracle directories or explicit paths.
 
 ## Spawning the Oracle (Mode B)
@@ -101,7 +101,7 @@ For every later question: answer precisely and cite `file:line` so I can
 jump straight there. Answer the question; never paste whole files.
 ```
 
-If code-review-graph is available, append to the prompt: the graph-derived reading list, plus a note that the oracle may run read-only `code-review-graph` queries (see [graph.md](graph.md)) for structural questions instead of grepping.
+If code-review-graph is available, append to the prompt: the graph-derived reading list, plus a note that the oracle may run read-only `code-review-graph` CLI queries (`detect-changes`, `status`) and, if the MCP server is registered, the structural graph tools (see [graph.md](graph.md)) instead of grepping.
 
 ### Research oracle prompt template (Mode B, external sources)
 ```
@@ -148,6 +148,6 @@ This skill is written in Claude Code tool names. On other runtimes, read them th
 - Typing a 2nd/3rd narrow `grep`/`awk` on the same file to dodge a full read.
 - About to `Read` a big file (or many files) just to answer one question.
 - Re-spawning an agent to ask something the last one already loaded.
-- Asking an oracle "who calls X?" when the graph answers it in milliseconds.
+- Asking an oracle "who calls X?" when the graph's MCP server (if registered) answers it in milliseconds.
 
 All of these → delegate to a subagent (oracle for understanding, recon for diagnostics), or run one command/Read per call for mutations and single facts.
