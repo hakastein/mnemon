@@ -18,7 +18,7 @@
 
 ### Install code-review-graph (strongly recommended)
 
-The graph half of mnemon is powered by [code-review-graph](https://github.com/tirth8205/code-review-graph). Without it the oracle still works, but it has to guess its reading list with Glob/Grep; with it, reading lists come from real blast-radius analysis over a symbol-level graph of your codebase, and structural questions ("who calls X?") are answered in milliseconds without spawning anything. Install it — this is most of the value.
+The graph half of mnemon is powered by [code-review-graph](https://github.com/tirth8205/code-review-graph). Without it the oracle still works, but it has to guess its reading list with Glob/Grep; with it, diff-scoped reading lists come from real blast-radius analysis (`detect-changes`) over a symbol-level graph of your codebase. Install it — this is most of the value.
 
 Requires Python 3.10+. Pick one:
 
@@ -29,6 +29,14 @@ pip install code-review-graph      # plain pip, if you know your environment
 ```
 
 That's the whole setup — fully local, no API keys, no extras needed. The skill builds the per-repo graph itself on first use (`code-review-graph build`) and keeps `.code-review-graph/` out of your commits. If the tool is missing when the skill needs it, the skill will offer to install it for you.
+
+**Structural questions need the MCP server.** The CLI answers only *diff-scoped* queries (`detect-changes`) — symbol-level questions like "who calls X?", impact radius around a symbol, or an architecture overview are exposed **only** through code-review-graph's MCP server. The skill *recommends* you register it (and waits for your OK — it never rewrites your MCP config unprompted). The surgical, skill-safe form registers just the MCP server:
+
+```bash
+code-review-graph install --platform claude-code --no-skills --no-hooks --no-instructions
+```
+
+(A bare `code-review-graph install` would also drop in its own skills/hooks and edit `CLAUDE.md`/`AGENTS.md`.) Without the MCP server, structural questions fall back to the oracle or grep.
 
 ## Codex CLI (and other runtimes)
 
@@ -51,7 +59,7 @@ Other runtimes follow the same recipe: where they offer re-queryable subagent th
   - *Live oracle*: a persistent subagent loads an area — a code module **or one research topic** (a public API, "the current state of X", an unfamiliar repo, a DB schema) — returns a map + its `agentId`; every follow-up goes to the same agent via `SendMessage`. No re-reading, no context burn.
   - *One-shot recon*: bounded diagnostics or lookups ("why did this fail?", "what's this API's auth flow?") with a strict `Ran / Found / Analysis / Recommended` report.
 - **`mnemon:oracle` agent** — the oracle persona: reads whole files/pages (never fragments), answers with precise `file:line` / `URL` citations, never pastes content back, never edits, never mutates. For broad reading of an unfamiliar repo it proposes cloning it + building a graph, rather than fetching it page by page.
-- **Graph-assisted scoping** — with [code-review-graph](https://github.com/tirth8205/code-review-graph) installed (see above), the skill uses its blast-radius analysis to compute the oracle's reading list and answers structural questions ("who calls X?") from the graph instead of spawning anything.
+- **Graph-assisted scoping** — with [code-review-graph](https://github.com/tirth8205/code-review-graph) installed (see above), the skill uses its blast-radius analysis to compute the oracle's reading list (diff-scoped via `detect-changes`); with the MCP server registered it also answers structural questions ("who calls X?") from the graph instead of spawning anything.
 
 ## The rules the skill enforces
 
@@ -59,7 +67,7 @@ Other runtimes follow the same recipe: where they offer re-queryable subagent th
 - One live oracle per code area; follow-ups via `SendMessage`, never a fresh spawn.
 - The oracle locates (`file:line`); **you** read and edit the slice yourself.
 - Mutations (`kill`/`rm`/deploy/migrations) never go to subagents.
-- Structural questions go to the graph when one exists; semantic questions go to the oracle.
+- Structural questions go to the graph's MCP server when it's registered; semantic questions go to the oracle.
 
 ## Design
 

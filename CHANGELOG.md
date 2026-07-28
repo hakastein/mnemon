@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — 2026-07-28
+
+- **Graph docs: MCP-first for structural queries.** Corrected a
+  capability error propagated across `graph.md`, `SKILL.md`, `README.md`, and
+  `DESIGN.md`: symbol-level structural questions ("who calls X?", impact radius
+  around a symbol, architecture overview) are **only** answerable through
+  code-review-graph's MCP server — the CLI exposes just diff-scoped
+  `detect-changes` and `status`. The skill now *recommends* the user register
+  the MCP server and **waits for their confirmation** (reversing the old "never
+  run `install`" stance), and recommends the surgical form
+  `code-review-graph install --platform claude-code --no-skills --no-hooks
+  --no-instructions` so a bare `install` doesn't inject competing skills/hooks
+  or edit `CLAUDE.md`/`AGENTS.md`. Without the MCP server, structural questions
+  degrade honestly to the oracle / grep.
+
 ## 0.3.0 — 2026-06-15
 
 - **Code-oracle skill: one-level-of-delegation rule.** Added a Common Mistakes

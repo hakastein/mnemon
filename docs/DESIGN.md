@@ -31,8 +31,8 @@ The division of labor mnemon encodes:
 
 | Question | Answered by |
 |---|---|
-| Which files matter for this change/area? | graph (impact radius, review context) |
-| Who calls X / what depends on Y? | graph |
+| Which files matter for this change/area? | graph — CLI `detect-changes` (a diff) or MCP `get_review_context_tool` / `get_impact_radius_tool` (an area) |
+| Who calls X / what depends on Y? | graph — MCP `query_graph_tool` / `get_impact_radius_tool` (symbol-level queries are MCP-only; the CLI can't answer them) |
 | What does this code mean / why is it like this? | oracle |
 | Where exactly do I edit? | oracle → `file:line` → main agent reads the slice |
 
@@ -69,7 +69,7 @@ The `skills/` dir is the single source of truth; each platform ships only a thin
 ## Key Decisions
 
 1. **code-review-graph is strongly recommended, but not a hard dependency.** It carries most of the scoping value, so the README documents its installation front-and-center and the skill, on finding it absent (`command -v` check once per session), *offers to install it on the spot* (`pipx install code-review-graph`) rather than silently degrading. Manual Glob/Grep scoping remains as the fallback only when the user declines or installation is impossible — the oracle pattern must still function on a bare Claude Code install. The plugin never installs software without asking.
-2. **Never run `code-review-graph install`.** That command rewrites the user's MCP configuration — a plugin has no business mutating it. If the user registers the MCP server themselves, the skill prefers those tools; otherwise the CLI's LLM-friendly text output is sufficient.
+2. **Recommend the MCP server; never register it unprompted.** Symbol-level structural queries ("who calls X", impact radius around a symbol, architecture overview) are **MCP-only** — the CLI answers only diff-scoped `detect-changes` and `status`, not arbitrary symbol queries. So the earlier "CLI text output is always sufficient" was wrong: when a session needs structural Q&A, the skill *recommends* the user enable the MCP server and **waits for explicit confirmation** before running anything — it never rewrites the user's MCP config silently. The recommended form is surgical: `code-review-graph install --platform claude-code --no-skills --no-hooks --no-instructions`, because a bare `install` also injects platform skills, hooks, and `CLAUDE.md`/`AGENTS.md` instructions that collide with this skill. Without the MCP server, structural Q&A degrades honestly to the oracle / grep.
 3. **pipx over pip** in the install suggestion: crg pins `mcp`/`fastmcp` ranges that can conflict in shared Python environments.
 4. **No embeddings extras.** The structural graph alone covers the scoping use case; `[embeddings]`/`[wiki]` pull heavy deps or API keys for marginal gain here.
 5. **`Sonnet`-class default for oracles, never haiku-class.** Small models loop on tool-confirmation behavior instead of reading. `opus` only when the *code* demands heavy reasoning; window pressure is solved by sharding into multiple oracles per sub-area, not by a bigger model.
