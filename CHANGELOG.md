@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-07-28
 
 - **Graph docs: MCP-first for structural queries.** Corrected a
   capability error propagated across `graph.md`, `SKILL.md`, `README.md`, and

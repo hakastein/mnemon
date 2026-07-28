@@ -1,6 +1,6 @@
 {
   "name": "mnemon",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Persistent code & research oracle subagents that hold whole files, pages, and repos in their own context and answer your follow-up questions, optionally scoped by a code-review-graph structural graph",
   "author": {
     "name": "hakastein",
