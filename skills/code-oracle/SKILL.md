@@ -1,6 +1,6 @@
 ---
 name: code-oracle
-description: Use when understanding code, system state, or an external topic would require reading lots of bulky material into your own context — repeated narrow greps on fragments, opening a 1000+ line file for one answer, mapping a module or flow, multi-step diagnostics, or researching one topic by fetching many web pages / a public-API reference / an unfamiliar GitHub repo / a DB schema. Spawns a persistent oracle subagent that reads the files or sources fully and answers follow-up questions via SendMessage, optionally scoped by a code-review-graph structural graph.
+description: Use when understanding code, system state, or an external topic would require reading lots of bulky material into your own context — repeated narrow greps on fragments, opening a 1000+ line file for one answer, mapping a module or flow, multi-step diagnostics, or researching one topic by fetching many web pages / a public-API reference / an unfamiliar GitHub repo / a DB schema. Spawns a persistent oracle subagent that reads the files or sources fully and answers follow-up questions via SendMessage, optionally scoped by a graphify structural graph.
 ---
 
 # Code Oracle
@@ -18,7 +18,7 @@ A "read" is anything bulky you pull in to *understand* rather than to act on —
 - **External research on one topic** — a public-API reference, a database schema, "what's the current state of X", a spec, release notes, an unfamiliar tool's behavior. WebSearch + WebFetch (or query the source) into the oracle, not into yourself.
 - **A GitHub repo you don't own locally** — decide *up front* how much you'll need, and fetch only that:
   - *A few known files* → WebFetch those specific `raw.githubusercontent.com` files in full. ("Fully" means each file you fetch whole — not the whole repo because one file in it matters.) No download needed.
-  - *Broad coverage / a heavy repo* → don't WebFetch source page by page, and don't silently download gigabytes. **Ask the user first**, e.g. *"looks like this needs broad reading of `repo/name` — clone it and run code-review-graph on the clone so scoping is easy?"* On yes, clone the **whole** repo to a context-appropriate spot (a scratch dir like `/tmp/<name>` for a throwaway look; `.refs/<name>` or the project's reference dir when it's a durable reference for the work — mind the sandbox, a subagent's reads may be confined to the project tree, so prefer an in-tree path when unsure), build a graph on it, and hand the oracle a graph-scoped reading list. From there it's a normal code oracle over the clone.
+  - *Broad coverage / a heavy repo* → don't WebFetch source page by page, and don't silently download gigabytes. **Ask the user first**, e.g. *"looks like this needs broad reading of `repo/name` — clone it and run graphify on the clone so scoping is easy?"* On yes, clone the **whole** repo to a context-appropriate spot (`graphify clone <url>` puts it under `~/.graphify/repos/<owner>/<repo>`; otherwise a scratch dir like `/tmp/<name>` for a throwaway look, or `.refs/<name>` / the project's reference dir when it's a durable reference for the work — mind the sandbox, a subagent's reads may be confined to the project tree, so prefer an in-tree path when unsure), build a graph on it, and hand the oracle a graph-scoped reading list. From there it's a normal code oracle over the clone.
 
 Doing narrow grep/awk gymnastics yourself to avoid a full read — or fetching web page after web page into your own context to piece a topic together — is the anti-pattern this replaces: it still burns your context and gives you a fragmentary picture. Let a subagent read fully instead. ("Fully" is per-source — one file, one page, one schema read whole — not vacuuming an entire repo. Locating one known target with a single `grep`/`Read`, or one quick `WebFetch` for a single fact, is fine — the ban is on fragment-by-fragment gathering used as a *substitute for understanding*, in your own context. Inside the oracle, `Grep`/`Glob`/`WebSearch` to FIND and then `Read`/`WebFetch` fully is exactly right.)
 
@@ -69,10 +69,12 @@ You must read what you **edit** — the oracle is for understanding and navigati
 
 Before spawning the oracle, decide WHICH files it should load. Guessing by directory name over-reads; the structural graph answers this precisely.
 
-Check once per session: `command -v code-review-graph`.
+Check once per session: `command -v graphify`.
 
-- **Available** → read [graph.md](graph.md). The CLI builds/refreshes the graph and computes **diff-scoped** reading lists (`detect-changes`). Symbol-level structural questions ("who calls X?", impact radius around a symbol, architecture overview) are **MCP-only** — graph.md covers recommending the MCP server to the user (and waiting for their confirmation before registering it); with it registered you answer those without spawning anything, without it they fall back to grep / the oracle.
-- **Not available** → offer to install it now: `pipx install code-review-graph` (fully local, no API keys; this is the recommended setup and most of the scoping value). If the user agrees, install, then proceed with [graph.md](graph.md). Only if the user declines or installation is impossible (no Python 3.10+, offline), scope by hand: `Glob`/`Grep` to identify the candidate file set, then give the oracle directories or explicit paths.
+- **Available** → read [graph.md](graph.md). The CLI builds the graph (`graphify extract . --code-only` — local, no API key) and answers the structural questions directly: `affected` for "who calls X / what depends on Y", `query` for a token-budgeted reading list, `path`/`explain`/`god-nodes` for shape. No MCP server needed; graph.md covers the optional one.
+- **Not available** → offer to install it now: `pipx install graphifyy` (the PyPI name while `graphify` is being reclaimed; the CLI is `graphify`). This is the recommended setup and most of the scoping value. If the user agrees, install, then proceed with [graph.md](graph.md). Only if the user declines or installation is impossible (no Python 3.10+, offline), scope by hand: `Glob`/`Grep` to identify the candidate file set, then give the oracle directories or explicit paths.
+
+Never run `graphify install` / `graphify claude install` as part of this — those install graphify's own competing skill and hooks. The bare CLI is what the scoping workflow uses.
 
 ## Spawning the Oracle (Mode B)
 
@@ -101,7 +103,7 @@ For every later question: answer precisely and cite `file:line` so I can
 jump straight there. Answer the question; never paste whole files.
 ```
 
-If code-review-graph is available, append to the prompt: the graph-derived reading list, plus a note that the oracle may run read-only `code-review-graph` CLI queries (`detect-changes`, `status`) and, if the MCP server is registered, the structural graph tools (see [graph.md](graph.md)) instead of grepping.
+If graphify is available, append to the prompt: the graph-derived reading list, plus a note that the oracle may run read-only `graphify` CLI queries (`affected`, `query`, `path`, `explain`, `god-nodes`) — and the MCP graph tools if that server is registered (see [graph.md](graph.md)) — instead of grepping.
 
 ### Research oracle prompt template (Mode B, external sources)
 ```
@@ -129,7 +131,7 @@ Same hygiene + "do NOT dispatch further subagents", read-only, and: `Report back
 This skill is written in Claude Code tool names. On other runtimes, read them through the per-platform map — the skill body doesn't change:
 
 - **Codex CLI** → [references/codex-tools.md](references/codex-tools.md). Key mappings: `Agent`/`Task` → `spawn_agent` (needs `[features] multi_agent = true` in `~/.codex/config.toml`); the live oracle's `SendMessage` follow-ups → re-prompting the same open agent thread (don't `close_agent` until done). Install via the Codex plugin manifest (`.codex-plugin/plugin.json`, `"skills": "./skills/"`).
-- **Other runtimes** → the oracle pattern needs one capability: a subagent thread that stays addressable across follow-ups. Where a runtime has it, Mode B works; where it doesn't, fall back to one richer Mode A recon pass rather than faking persistence by re-spawning. `code-review-graph` is an external CLI and behaves identically everywhere.
+- **Other runtimes** → the oracle pattern needs one capability: a subagent thread that stays addressable across follow-ups. Where a runtime has it, Mode B works; where it doesn't, fall back to one richer Mode A recon pass rather than faking persistence by re-spawning. `graphify` is an external CLI and behaves identically everywhere.
 
 ## Common Mistakes
 
@@ -138,7 +140,7 @@ This skill is written in Claude Code tool names. On other runtimes, read them th
 - Using `Explore` as the oracle → it reads excerpts, not whole files; use the oracle agent and tell it to read fully.
 - Letting the oracle paste whole files/pages back → defeats the point; require targeted answers + `file:line` / `URL`.
 - Delegating an edit → you must read what you edit; oracle locates, you Read+edit the minimal slice.
-- Guessing the reading list by directory name when a graph is one command away → check for code-review-graph first.
+- Guessing the reading list by directory name when a graph is one command away → check for graphify first.
 - WebFetching page after page (or cloning + browsing a repo) into your OWN context to research one topic → that's a "read"; send it to a research oracle (Mode B).
 - Letting a subagent run `kill`/`rm`/`deploy` → mutations stay with you, one command per call.
 - A spawned oracle/recon spawning its OWN subagent → **one level of delegation only**. A spawned subagent is a leaf: it reads and answers, it never re-invokes this skill or fans out further. The `mnemon:oracle` agent enforces this (no spawn tool); the `general-purpose` fallback does NOT — it *can* spawn, so used as the oracle it will nest recon under recon unless its prompt forbids it.
@@ -148,6 +150,6 @@ This skill is written in Claude Code tool names. On other runtimes, read them th
 - Typing a 2nd/3rd narrow `grep`/`awk` on the same file to dodge a full read.
 - About to `Read` a big file (or many files) just to answer one question.
 - Re-spawning an agent to ask something the last one already loaded.
-- Asking an oracle "who calls X?" when the graph's MCP server (if registered) answers it in milliseconds.
+- Asking an oracle "who calls X?" when `graphify affected "X"` answers it in milliseconds.
 
 All of these → delegate to a subagent (oracle for understanding, recon for diagnostics), or run one command/Read per call for mutations and single facts.

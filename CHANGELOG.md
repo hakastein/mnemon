@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.5.0 — 2026-07-29
+
+- **Graph engine swapped: code-review-graph → [graphify](https://github.com/Graphify-Labs/graphify).**
+  Not a rename — a different engine with a different command surface, so
+  `graph.md` was rewritten and every reference across `SKILL.md`, `oracle.md`,
+  `README.md`, `DESIGN.md`, the manifests, and the issue templates was updated
+  to the real API. Install is `pipx install graphifyy` (PyPI name while
+  `graphify` is being reclaimed upstream; the CLI is `graphify`), the per-repo
+  artifact is `graphify-out/` (gitignored), and the build is
+  `graphify extract . --code-only`.
+- **Structural queries are back on the CLI**, reversing 0.4.0's MCP-first
+  story: `graphify affected "X"` answers "who calls X / what depends on Y",
+  `graphify query "<q>"` returns a token-budgeted reading list, and
+  `path` / `explain` / `god-nodes` cover connections and shape. The MCP server
+  (`python -m graphify.serve <graph.json>`) is now optional ergonomics rather
+  than the only route to symbol-level Q&A — nothing degrades to grep without it.
+  There is no diff-scoped subcommand any more; derive the changed symbols from
+  the diff and run `affected` on them.
+- **New caveats the docs now state honestly.** A full `graphify extract .`
+  dispatches a semantic LLM pass over docs/PDFs/images, so `--code-only`
+  (AST-only, local, no API key) is the documented default for scoping. Graph
+  edges are tagged `EXTRACTED` / `INFERRED` / `AMBIGUOUS`, and only the first
+  comes from the AST — the oracle is told to verify an inferred edge before
+  reporting it as a call site.
+- **Never run graphify's own installers.** `graphify install` places
+  graphify's competing Claude Code skill and registers it in
+  `~/.claude/CLAUDE.md`; `graphify claude install` also writes `PreToolUse`
+  hooks into `.claude/settings.json`. The skill, the oracle persona, and the
+  README all now say mnemon uses the bare CLI only.
+- **Research flow gains first-class repo cloning**: `graphify clone <url>`
+  clones to `~/.graphify/repos/<owner>/<repo>` and prints the path, and
+  `graphify global add` merges several project graphs into one cross-repo graph.
+
 ## 0.4.0 — 2026-07-28
 
 - **Graph docs: MCP-first for structural queries.** Corrected a

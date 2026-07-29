@@ -1,58 +1,66 @@
-# Graph-Assisted Scoping with code-review-graph
+# Graph-Assisted Scoping with graphify
 
-[code-review-graph](https://github.com/tirth8205/code-review-graph) (MIT) builds a persistent structural graph of the codebase — functions, classes, imports, call sites — with Tree-sitter, stored in SQLite under `.code-review-graph/`. 40+ languages. Fully local, no API keys, no model calls on the core path.
+[graphify](https://github.com/Graphify-Labs/graphify) (MIT) builds a persistent knowledge graph of a corpus — functions, classes, imports, call sites via Tree-sitter, plus concepts and relationships extracted from docs, PDFs and images — and writes it to `graphify-out/graph.json` alongside a `GRAPH_REPORT.md`, an interactive `graph.html`, and a SHA256 cache so re-runs only process changed files.
 
-Division of labor: **the graph answers "which files matter and how they connect"; the oracle answers "what this code means."** But the graph is reachable two different ways, and they are NOT interchangeable:
+Division of labor: **the graph answers "which files matter and how they connect"; the oracle answers "what this code means."**
 
-- **CLI** (`build`, `update`, `status`, `detect-changes`, `visualize`) — builds/refreshes the graph and answers **diff-scoped** questions. `detect-changes` turns a git diff into an impact / reading-list panel. That is the *only* query the CLI exposes — there is no CLI subcommand for arbitrary symbol-level questions.
-- **MCP server** (`code-review-graph serve`) — the only way to ask **symbol-level structural questions**: "who calls X", impact radius around an arbitrary symbol, architecture overview, review context. These are MCP tools (`query_graph_tool`, `traverse_graph_tool`, `get_impact_radius_tool`, `get_review_context_tool`, `get_architecture_overview_tool`, `get_minimal_context_tool`, `detect_changes_tool`), not CLI subcommands.
+Two ways in, and unlike other graph engines they overlap almost completely:
 
-So **"who calls X?" is not a CLI capability.** Without the MCP server registered it falls back to grep / the oracle's own reading — the CLI cannot answer it.
+- **CLI** (`extract`, `update`, `query`, `affected`, `path`, `explain`, `god-nodes`, …) — builds the graph *and* answers structural questions, including symbol-level ones. This is the primary surface; it is enough for the whole scoping workflow.
+- **MCP server** (`python -m graphify.serve <graph.json>`) — the same graph exposed as in-session tools (`query_graph`, `shortest_path`, `get_node`, `get_neighbors`, `get_community`, `god_nodes`, `graph_stats`). Convenient, not required. Needs the `mcp` extra.
+
+So **"who calls X?" *is* a CLI capability here** (`graphify affected "X"`). No MCP round-trip, no fallback to grep.
 
 ## Setup (once per repo)
 
-1. `command -v code-review-graph` — if missing, offer to install it: `pipx install code-review-graph` (pipx isolates its dependency pins; core install is light — no embeddings extras needed). It is the strongly recommended companion to this skill; see the plugin README's install section for alternatives (`uv tool install`, plain `pip`).
-2. `code-review-graph status` — check whether a graph exists and is fresh.
-3. `code-review-graph build` — first build (fast: ~130ms per 1.1k files). After that, `code-review-graph update` refreshes incrementally.
-4. Make sure `.code-review-graph/` is in the project's `.gitignore` (add it if you create the graph).
+1. `command -v graphify` — if missing, offer to install it: `pipx install graphifyy` (the PyPI name is `graphifyy` while `graphify` is being reclaimed upstream; the CLI is still `graphify`). See the plugin README for alternatives (`uv tool install`, plain `pip`).
+2. Check for an existing graph: `graphify-out/graph.json` in the repo root.
+3. Build it:
+   - `graphify extract . --code-only` — AST-only pass. Fully local, **no API key**, no model calls. This is the default choice for scoping a codebase.
+   - `graphify extract .` — full pass: AST *plus* a semantic LLM pass over docs/PDFs/images. **This one calls an LLM** (`--backend gemini|kimi|claude|openai|deepseek|ollama`, picked from whichever API key is set). Only reach for it when the corpus is genuinely mixed (papers, notes, diagrams) and the user is fine with the calls.
+4. Keep it fresh: `graphify update .` re-extracts changed code files with no LLM. `graphify hook install` wires a post-commit hook that does it automatically; `graphify check-update .` reports whether a semantic re-pass is pending.
+5. Make sure `graphify-out/` is in the project's `.gitignore` (add it if you create the graph).
 
-### Enabling the MCP server (recommended for structural questions)
+**Do not run `graphify install` or `graphify claude install`.** Those install graphify's *own* skill, register it in `~/.claude/CLAUDE.md`, and (for `claude install`) add `PreToolUse` hooks to `.claude/settings.json` — competing instructions that collide with this skill. The bare CLI is all this workflow needs. If the user wants graphify's own skill too, that's their call to make explicitly, not a side effect of scoping a reading list.
 
-Symbol-level structural queries ("who calls X", impact radius around a symbol, architecture overview) are **MCP-only** — the CLI cannot answer them. When the session leans on them, **recommend the user register the MCP server and wait for their explicit confirmation before running anything.** The plugin never rewrites the user's MCP configuration unprompted; recommending and then acting on a yes is the workflow, not a silent install.
+### Optional: the MCP server
 
-Recommend exactly this **surgical** form — a bare `code-review-graph install` *also* generates platform-native skill files, hooks, and injects instructions into `CLAUDE.md`/`AGENTS.md`, which collides with this skill:
+If a session leans heavily on structural Q&A and the user prefers in-session tools over CLI calls, the graph can be served over MCP. **Recommend it and wait for explicit confirmation** — never rewrite the user's MCP configuration unprompted. Registration is manual (graphify's installers do not register it):
 
 ```
-code-review-graph install --platform claude-code --no-skills --no-hooks --no-instructions
+uv run --with graphifyy --with mcp -m graphify.serve <repo>/graphify-out/graph.json
 ```
 
-That registers **only** the MCP server for Claude Code (swap `--platform` on other runtimes; `--dry-run` first to show the user what it will write). Once the user confirms and it's registered, the structural tools (`get_impact_radius_tool`, `get_review_context_tool`, `get_architecture_overview_tool`, `query_graph_tool`, `detect_changes_tool`, …) are available directly — prefer them for structural questions. Keep impact queries bounded with `CRG_MAX_IMPACT_NODES` / `CRG_MAX_IMPACT_DEPTH` if results get large; narrow the exposed surface with `--tools` / `CRG_TOOLS`.
+as the command for an MCP stdio server entry. Once registered, `query_graph`, `shortest_path`, `get_node`, `get_neighbors`, `get_community`, `god_nodes`, and `graph_stats` are available directly. Everything they answer, the CLI also answers — this is ergonomics, not capability.
 
 ## Queries to Use
 
-| Question | How | Needs MCP? |
-|---|---|---|
-| What changed and what does it impact? | `code-review-graph detect-changes --brief` — risk panel for the current diff | No — CLI |
-| Graph shape / freshness | `code-review-graph status`; `visualize` for an HTML export | No — CLI |
-| Reading list for a diff | `detect-changes` on the relevant diff | No — CLI |
-| Who calls X / what depends on Y? | `get_impact_radius_tool` / `query_graph_tool` | **Yes — MCP** (else grep / oracle) |
-| Impact radius / reading list for an *area* (not a diff) | `get_impact_radius_tool` / `get_review_context_tool` | **Yes — MCP** (else `detect-changes` on a diff, or scope by hand) |
-| Architecture overview | `get_architecture_overview_tool` | **Yes — MCP** |
+| Question | How |
+|---|---|
+| Who calls X / what depends on Y? | `graphify affected "X" --depth 2` — reverse traversal from the symbol |
+| Reading list for an area | `graphify query "<question>" --budget 2000` — BFS over the graph, token-capped |
+| How do A and B connect? | `graphify path "A" "B"` — shortest path between two nodes |
+| What is X, and what sits next to it? | `graphify explain "X"` — node plus neighbors, in plain language |
+| Architecture overview / where's the core? | `graphify god-nodes --top 10` (hubs); `graphify-out/GRAPH_REPORT.md`; `graphify tree` or `graphify export callflow-html` for a visual |
+| What changed and what does it impact? | `graphify update .` then `graphify affected "<changed symbol>"` — there is no diff-scoped subcommand; go from the diff's symbols |
+| Graph shape / freshness | `graphify-out/graph.json` mtime; `graphify check-update .`; `graphify benchmark` |
 
-Run the CLI queries yourself (output is small) or hand them to the oracle / recon subagent. Without the MCP server the graph still earns its keep for **diff-scoped** work via `detect-changes`; symbol-level Q&A degrades to grep or the oracle reading the code — don't pretend the CLI answered it.
+Run these yourself (output is small and token-budgeted) or hand them to the oracle / recon subagent. Every edge is tagged `EXTRACTED`, `INFERRED`, or `AMBIGUOUS` — an `INFERRED` edge is a hypothesis, not a call site, so don't report one as a confirmed caller.
 
-The graph isn't only for the working project — it works on **any repo root**, including an external repo you've cloned for research. When a research task means broad reading of someone else's codebase, the move is: ask the user → clone the whole repo → `code-review-graph build` on the clone → scope the oracle's reading list from the graph, exactly as below. That turns "read an unfamiliar repo" into "read these 6 files."
+The graph isn't only for the working project — it works on **any repo root**, including an external repo cloned for research. graphify has a helper for exactly that: `graphify clone <github-url>` clones to `~/.graphify/repos/<owner>/<repo>` and prints the path. So the research move is: ask the user → `graphify clone` → `graphify extract <path> --code-only` → scope the oracle's reading list from the graph. That turns "read an unfamiliar repo" into "read these 6 files." Working across several repos at once, `graphify global add <graph.json> --as <tag>` merges them into one cross-repo graph under `~/.graphify/`.
 
 ## The Pattern
 
-1. Graph: given a change (CLI `detect-changes`) or an area of interest (MCP `get_review_context_tool` / `get_impact_radius_tool`), which symbols and files are in the blast radius? → a concrete file list (typically a handful instead of a directory).
+1. Graph: given a change (the symbols its diff touches) or an area of interest, which symbols and files are in the blast radius? → `graphify affected` / `graphify query` → a concrete file list (typically a handful instead of a directory).
 2. Oracle: spawn it with exactly that list to read fully.
-3. Structural follow-ups during work ("who calls this?", "what depends on that module?") → MCP graph tools **if registered**, else grep or the oracle — never a guess dressed up as a graph answer.
+3. Structural follow-ups during work ("who calls this?", "what depends on that module?") → the graph CLI (or its MCP tools if registered) — answered in milliseconds, without spawning anything.
 4. Semantic follow-ups ("why does this retry twice?", "where is the invariant enforced?") → the live oracle via `SendMessage`.
 
 ## Caveats
 
-- The CLI has no JSON output mode; output is human/LLM-readable text. Parse it as prose, don't script against it.
-- **The CLI cannot answer symbol-level structural questions** — only `detect-changes` (diff-scoped) and `status`. "Who calls X" / impact radius around an arbitrary symbol require the MCP server; without it, fall back to grep / the oracle.
-- Flow detection and some metrics are conservative/Python-centric — treat impact lists as a strong prior, not ground truth. If the oracle's reading contradicts the graph, trust the read code.
-- A stale graph misleads: after big rebases or generated-code churn, `code-review-graph update` before querying.
+- **The semantic pass costs LLM calls.** `graphify extract .` dispatches to a configured backend for docs/PDFs/images; `--code-only` avoids that entirely. Don't silently spend the user's API budget to scope a reading list.
+- **`INFERRED` / `AMBIGUOUS` edges are guesses.** Only `EXTRACTED` edges come from the AST. Treat the rest as a strong prior, not ground truth — and if the oracle's reading contradicts the graph, trust the read code.
+- **No diff-scoped subcommand.** Derive the changed symbols from the diff yourself, then `affected` each one.
+- Query output is capped (`--budget`, default 2000 tokens) and shaped as prose. Use `--json` where a command offers it (`god-nodes`); otherwise parse it as prose, don't script against it.
+- A stale graph misleads: after big rebases or generated-code churn, `graphify update .` before querying (`--force` after refactors that delete code, else the rebuild is refused for having fewer nodes).
+- Language coverage is Tree-sitter based: Python, TS/JS, Go, Rust, Java, C/C++, Ruby, C#, Kotlin, Scala, PHP. Outside that set the graph leans on the semantic pass, which needs an LLM backend.

@@ -12,7 +12,7 @@ The `code-oracle` skill is authored in Claude Code tool names. On [Codex CLI](ht
 | `Read` / `Grep` / `Glob` / `Bash` | Your native file and shell tools |
 | `WebFetch` / `WebSearch` | Your native web/fetch tools |
 | `Skill` (invoke `code-oracle`) | Skills load natively — just follow the instructions |
-| `code-review-graph` CLI | Unchanged — it's an external CLI (`pipx install code-review-graph`) and runs identically under any agent |
+| `graphify` CLI | Unchanged — it's an external CLI (`pipx install graphifyy`) and runs identically under any agent |
 
 ## Subagent dispatch requires multi-agent support
 
