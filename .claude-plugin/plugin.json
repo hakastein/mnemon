@@ -1,8 +1,8 @@
 {
   "name": "mnemon",
   "displayName": "Mnemon",
-  "version": "0.4.0",
-  "description": "Persistent code & research oracle subagents that hold whole files, web pages, and repos in their own context and answer your follow-up questions, optionally scoped by a code-review-graph structural graph",
+  "version": "0.5.0",
+  "description": "Persistent code & research oracle subagents that hold whole files, web pages, and repos in their own context and answer your follow-up questions, optionally scoped by a graphify structural graph",
   "author": {
     "name": "hakastein",
     "url": "https://github.com/hakastein"
@@ -14,7 +14,7 @@
     "subagents",
     "context",
     "code-oracle",
-    "code-review-graph",
+    "graphify",
     "investigation"
   ]
 }

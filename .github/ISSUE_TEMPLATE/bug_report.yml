@@ -31,7 +31,7 @@ body:
         - Harness + version (Claude Code / Codex CLI / other):
         - Model:
         - Mnemon version:
-        - code-review-graph installed? version:
+        - graphify installed? version (`graphify --version`):
         - OS:
     validations:
       required: true
