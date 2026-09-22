@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0 — 2026-09-22
+
+- **The oracle is now for external research only**: large documentation, API
+  references, another project's source. The current project's code — including
+  "how does it already do X" — stays in the main agent's window. Local code
+  navigation and one-shot diagnostics (Mode A/B, recon) are gone.
+- **Skill rewritten as scope + five steps**, describing intent rather than tool
+  names, so no per-platform tool map is needed (`references/codex-tools.md`
+  removed). The oracle persona now states deliverables only.
+- `graph.md` narrowed to scoping a cloned external repo.
+
 ## 0.5.0 — 2026-07-29
 
 - **Graph engine swapped: code-review-graph → [graphify](https://github.com/Graphify-Labs/graphify).**

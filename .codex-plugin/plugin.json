@@ -1,7 +1,7 @@
 {
   "name": "mnemon",
-  "version": "0.5.0",
-  "description": "Persistent code & research oracle subagents that hold whole files, pages, and repos in their own context and answer your follow-up questions, optionally scoped by a graphify structural graph",
+  "version": "0.6.0",
+  "description": "Research oracle: an agent that holds large documentation or an external repo in its own context and answers your follow-up questions with citations, optionally scoped by a graphify graph",
   "author": {
     "name": "hakastein",
     "url": "https://github.com/hakastein"
@@ -14,22 +14,21 @@
     "context",
     "code-oracle",
     "research",
-    "graphify",
-    "investigation"
+    "graphify"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Mnemon",
-    "shortDescription": "Persistent oracle subagents for context-cheap code and research investigation",
-    "longDescription": "Spawn a subagent that reads files, web pages, or a whole repo fully into its own context, keep it alive, and ask it follow-up questions — it answers with file:line / URL citations while your own context stays clean. Optionally scoped by a graphify structural graph.",
+    "shortDescription": "Research oracle for documentation and external repos",
+    "longDescription": "Brief an agent to read a large body of documentation or another project's source into its own context, keep it available, and ask it follow-up questions — it answers with URL / path:line citations while your context stays clean. Broad repo reading can be scoped by a graphify graph.",
     "developerName": "hakastein",
     "category": "Coding",
     "capabilities": [
       "Read"
     ],
     "defaultPrompt": [
-      "Help me understand how this module works without filling my context.",
-      "Research the current state of <topic> and keep it on tap for follow-ups."
+      "Research how <open-source project> implements <feature>.",
+      "Study the <product> API docs and keep them on tap for follow-ups."
     ],
     "websiteURL": "https://github.com/hakastein/mnemon"
   }
